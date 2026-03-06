@@ -14,7 +14,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "API_BASE_URL", "\"https://tenko-api.your-domain.workers.dev\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://alc-app.m-tama-ramu.workers.dev\"")
     }
 
     buildTypes {

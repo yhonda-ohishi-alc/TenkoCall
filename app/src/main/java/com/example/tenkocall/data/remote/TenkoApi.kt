@@ -5,9 +5,9 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface TenkoApi {
-    @POST("/api/register")
+    @POST("/api/tenko-call/register")
     suspend fun register(@Body request: RegisterRequest): RegisterResponse
 
-    @POST("/api/tenko")
+    @POST("/api/tenko-call/tenko")
     suspend fun sendTenko(@Body request: TenkoRequest): TenkoResponse
 }
