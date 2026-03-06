@@ -150,6 +150,7 @@ class MainActivity : AppCompatActivity() {
                 setPrompt("点呼用QRコードをスキャンしてください")
                 setBeepEnabled(false)
                 setOrientationLocked(true)
+                setCaptureActivity(PortraitCaptureActivity::class.java)
             }
             qrScanLauncher.launch(options)
         }
