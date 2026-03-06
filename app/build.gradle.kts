@@ -17,9 +17,30 @@ android {
         buildConfigField("String", "API_BASE_URL", "\"https://alc-app.m-tama-ramu.workers.dev\"")
     }
 
+    signingConfigs {
+        create("release") {
+            val ksFile = System.getenv("KEYSTORE_FILE")
+            if (ksFile != null) {
+                storeFile = file(ksFile)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            } else {
+                val localKs = rootProject.file("release.keystore")
+                if (localKs.exists()) {
+                    storeFile = localKs
+                    storePassword = "tenkocall2024"
+                    keyAlias = "tenkocall"
+                    keyPassword = "tenkocall2024"
+                }
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
