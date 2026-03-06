@@ -12,7 +12,10 @@
     <string name="error_server">サーバーへの送信に失敗しました</string>
     <string name="error_no_destination">発信先番号が登録されていません。管理者に連絡してください</string>
     <string name="error_permission">必要な権限が許可されていません</string>
-    <string name="error_no_call_log">着信履歴がありません。管理者からの電話を受けてから起動してください</string>
     <string name="label_phone_number">自局番号: %s</string>
     <string name="label_driver_name">ドライバー名</string>
+    <string name="btn_scan_qr">QRコード読み取り</string>
+    <string name="status_scan_qr">QRコードを読み取ってください</string>
+    <string name="status_registered">登録済み（点呼先: %s）</string>
+    <string name="label_call_number">点呼先: %s</string>
 </resources>

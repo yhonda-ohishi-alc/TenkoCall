@@ -60,4 +60,7 @@ dependencies {
 
     // Location
     implementation("com.google.android.gms:play-services-location:21.1.0")
+
+    // QR Code scanning
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 }

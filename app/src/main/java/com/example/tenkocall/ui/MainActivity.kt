@@ -7,18 +7,18 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.tenkocall.R
 import com.example.tenkocall.databinding.ActivityMainBinding
-import com.example.tenkocall.util.CallLogUtil
 import com.example.tenkocall.util.PhoneNumberUtil
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var myPhoneNumber: String? = null
+    private var scannedCallNumber: String? = null
 
     private val requiredPermissions: Array<String>
         get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -33,14 +34,14 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.READ_PHONE_NUMBERS,
                 Manifest.permission.CALL_PHONE,
                 Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.READ_CALL_LOG
+                Manifest.permission.CAMERA
             )
         } else {
             arrayOf(
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.CALL_PHONE,
                 Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.READ_CALL_LOG
+                Manifest.permission.CAMERA
             )
         }
 
@@ -50,7 +51,6 @@ class MainActivity : AppCompatActivity() {
         if (results.values.all { it }) {
             onPermissionsGranted()
         } else {
-            // 電話番号権限が拒否された場合は使用不可
             val phonePermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 Manifest.permission.READ_PHONE_NUMBERS
             } else {
@@ -66,6 +66,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val qrScanLauncher = registerForActivityResult(ScanContract()) { result ->
+        if (result.contents != null) {
+            val callNumber = result.contents.trim()
+            scannedCallNumber = callNumber
+
+            // SharedPreferences に保存
+            getSharedPreferences("tenko", MODE_PRIVATE)
+                .edit().putString("call_number", callNumber).apply()
+
+            // サーバーに登録
+            val driverName = binding.etDriverName.text.toString().ifBlank { "未設定" }
+            getSharedPreferences("tenko", MODE_PRIVATE)
+                .edit().putString("driver_name", driverName).apply()
+
+            viewModel.register(myPhoneNumber!!, driverName, callNumber)
+
+            binding.tvCallNumber.text = getString(R.string.label_call_number, callNumber)
+            binding.tvCallNumber.visibility = View.VISIBLE
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -73,10 +94,17 @@ class MainActivity : AppCompatActivity() {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        // ドライバー名を SharedPreferences から復元
+        // SharedPreferences から復元
         val prefs = getSharedPreferences("tenko", MODE_PRIVATE)
         val savedName = prefs.getString("driver_name", "") ?: ""
+        val savedCallNumber = prefs.getString("call_number", null)
         binding.etDriverName.setText(savedName)
+
+        if (savedCallNumber != null) {
+            scannedCallNumber = savedCallNumber
+            binding.tvCallNumber.text = getString(R.string.label_call_number, savedCallNumber)
+            binding.tvCallNumber.visibility = View.VISIBLE
+        }
 
         setupObservers()
         setupListeners()
@@ -103,31 +131,31 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.tvPhoneNumber.text = getString(R.string.label_phone_number, myPhoneNumber)
+        binding.btnScanQr.isEnabled = true
 
-        // 着信履歴から点呼用番号を検索
-        val incomingNumbers = CallLogUtil.getRecentIncomingNumbers(this)
-        if (incomingNumbers.isEmpty()) {
-            binding.tvStatus.text = getString(R.string.error_no_call_log)
+        // 保存済みの点呼先がある場合、自動で再登録
+        if (scannedCallNumber != null) {
+            val driverName = binding.etDriverName.text.toString().ifBlank { "未設定" }
+            viewModel.register(myPhoneNumber!!, driverName, scannedCallNumber!!)
+        } else {
+            binding.tvStatus.text = getString(R.string.status_scan_qr)
             binding.btnTenko.isEnabled = false
-            return
         }
-
-        // 直近の着信番号の1番目を点呼用番号として使用
-        // サーバー側でマスタ検証する
-        val callNumber = incomingNumbers.first()
-
-        binding.btnTenko.isEnabled = true
-        binding.tvStatus.text = getString(R.string.status_ready)
-
-        // サーバーに登録 (自分の番号 + 着信履歴の点呼用番号)
-        val driverName = binding.etDriverName.text.toString().ifBlank { "未設定" }
-        viewModel.register(myPhoneNumber!!, driverName, callNumber)
     }
 
     private fun setupListeners() {
+        binding.btnScanQr.setOnClickListener {
+            val options = ScanOptions().apply {
+                setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                setPrompt("点呼用QRコードをスキャンしてください")
+                setBeepEnabled(false)
+                setOrientationLocked(true)
+            }
+            qrScanLauncher.launch(options)
+        }
+
         binding.btnTenko.setOnClickListener {
             val driverName = binding.etDriverName.text.toString().ifBlank { "未設定" }
-            // ドライバー名を保存
             getSharedPreferences("tenko", MODE_PRIVATE)
                 .edit().putString("driver_name", driverName).apply()
 
@@ -173,7 +201,7 @@ class MainActivity : AppCompatActivity() {
             when (state) {
                 TenkoState.READY -> {
                     binding.progressBar.visibility = View.GONE
-                    binding.btnTenko.isEnabled = myPhoneNumber != null
+                    binding.btnTenko.isEnabled = myPhoneNumber != null && scannedCallNumber != null
                 }
                 TenkoState.GETTING_LOCATION -> {
                     binding.progressBar.visibility = View.VISIBLE
@@ -190,7 +218,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 TenkoState.ERROR -> {
                     binding.progressBar.visibility = View.GONE
-                    binding.btnTenko.isEnabled = true
+                    binding.btnTenko.isEnabled = scannedCallNumber != null
                 }
                 null -> {}
             }
@@ -217,7 +245,6 @@ class MainActivity : AppCompatActivity() {
             data = Uri.parse("tel:$phoneNumber")
         }
         startActivity(intent)
-        // 電話発信後にステートをリセット
         viewModel.resetState()
     }
 }

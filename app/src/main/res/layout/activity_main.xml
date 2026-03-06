@@ -35,6 +35,32 @@
             android:inputType="textPersonName" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- QR読み取りボタン -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnScanQr"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/btn_scan_qr"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/tilDriverName"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp" />
+
+    <!-- 登録済み点呼先表示 -->
+    <TextView
+        android:id="@+id/tvCallNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/btnScanQr"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp" />
+
     <!-- 点呼ボタン -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnTenko"
