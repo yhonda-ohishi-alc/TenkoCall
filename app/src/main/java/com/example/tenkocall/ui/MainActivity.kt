@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.tenkocall.R
 import com.example.tenkocall.databinding.ActivityMainBinding
+import com.example.tenkocall.util.CallLogUtil
 import com.example.tenkocall.util.PhoneNumberUtil
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -31,13 +32,15 @@ class MainActivity : AppCompatActivity() {
             arrayOf(
                 Manifest.permission.READ_PHONE_NUMBERS,
                 Manifest.permission.CALL_PHONE,
-                Manifest.permission.ACCESS_FINE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.READ_CALL_LOG
             )
         } else {
             arrayOf(
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.CALL_PHONE,
-                Manifest.permission.ACCESS_FINE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.READ_CALL_LOG
             )
         }
 
@@ -100,12 +103,25 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.tvPhoneNumber.text = getString(R.string.label_phone_number, myPhoneNumber)
+
+        // 着信履歴から点呼用番号を検索
+        val incomingNumbers = CallLogUtil.getRecentIncomingNumbers(this)
+        if (incomingNumbers.isEmpty()) {
+            binding.tvStatus.text = getString(R.string.error_no_call_log)
+            binding.btnTenko.isEnabled = false
+            return
+        }
+
+        // 直近の着信番号の1番目を点呼用番号として使用
+        // サーバー側でマスタ検証する
+        val callNumber = incomingNumbers.first()
+
         binding.btnTenko.isEnabled = true
         binding.tvStatus.text = getString(R.string.status_ready)
 
-        // サーバーに登録
+        // サーバーに登録 (自分の番号 + 着信履歴の点呼用番号)
         val driverName = binding.etDriverName.text.toString().ifBlank { "未設定" }
-        viewModel.register(myPhoneNumber!!, driverName)
+        viewModel.register(myPhoneNumber!!, driverName, callNumber)
     }
 
     private fun setupListeners() {

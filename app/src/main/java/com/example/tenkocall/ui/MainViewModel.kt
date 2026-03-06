@@ -34,11 +34,11 @@ class MainViewModel : ViewModel() {
     var registeredCallNumber: String? = null
         private set
 
-    fun register(phoneNumber: String, driverName: String) {
+    fun register(phoneNumber: String, driverName: String, callNumber: String) {
         viewModelScope.launch {
             try {
                 val response = ApiClient.api.register(
-                    RegisterRequest(phoneNumber, driverName)
+                    RegisterRequest(phoneNumber, driverName, callNumber)
                 )
                 if (response.success) {
                     registeredCallNumber = response.call_number

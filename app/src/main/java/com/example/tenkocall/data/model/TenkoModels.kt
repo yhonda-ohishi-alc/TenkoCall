@@ -15,7 +15,8 @@ data class TenkoResponse(
 
 data class RegisterRequest(
     val phone_number: String,
-    val driver_name: String
+    val driver_name: String,
+    val call_number: String
 )
 
 data class RegisterResponse(
