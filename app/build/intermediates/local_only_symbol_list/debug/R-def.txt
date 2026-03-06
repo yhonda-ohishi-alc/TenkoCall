@@ -1,0 +1,35 @@
+R_DEF: Internal format may change without notice
+local
+color accent
+color black
+color gray_light
+color green_success
+color primary
+color primary_dark
+color red_error
+color white
+id btnTenko
+id etDriverName
+id progressBar
+id tilDriverName
+id tvLastTenko
+id tvPhoneNumber
+id tvStatus
+layout activity_main
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string btn_tenko
+string error_location
+string error_no_destination
+string error_no_phone_number
+string error_permission
+string error_server
+string label_driver_name
+string label_phone_number
+string status_calling
+string status_done
+string status_getting_location
+string status_ready
+string status_sending
+style Theme.TenkoCall
